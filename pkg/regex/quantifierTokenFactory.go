@@ -1,4 +1,4 @@
-	package regex
+package regex
 
 import (
 	"strings"
@@ -10,32 +10,32 @@ type quantifier struct {
 	max int
 }
 
-func quantifierParse(token Token, regex []rune, regexPos int) (Token, int, *RegexException) {
+func quantifierParse(token Token, regex []rune, regexPos int) (Token, int) {
 	var q *quantifier
 	var qt Token
 
 	if len(regex) == regexPos {
-		return nil, regexPos, nil
+		return nil, regexPos
 	}
 
 	switch regex[regexPos] {
-		case '{':
-			endPos := strings.IndexRune(string(regex[regexPos:]),'}')
-			if endPos != -1 {
-				q = handleVariable(regex, regexPos+1)
-				if q != nil {
-					regexPos += endPos + 1 // endPos is relative to the start of regexPos because of slice method
-				}
+	case '{':
+		endPos := strings.IndexRune(string(regex[regexPos:]), '}')
+		if endPos != -1 {
+			q = handleVariable(regex, regexPos+1)
+			if q != nil {
+				regexPos += endPos + 1 // endPos is relative to the start of regexPos because of slice method
 			}
-		case '*':
-			q = &quantifier{0, -1}
-			regexPos++
-        case '+':
-        	q = &quantifier{1, -1}
-            regexPos++
-        case '?':
-        	q = &quantifier{0, 1}
-        	regexPos++
+		}
+	case '*':
+		q = &quantifier{0, -1}
+		regexPos++
+	case '+':
+		q = &quantifier{1, -1}
+		regexPos++
+	case '?':
+		q = &quantifier{0, 1}
+		regexPos++
 
 	}
 
@@ -50,12 +50,11 @@ func quantifierParse(token Token, regex []rune, regexPos int) (Token, int, *Rege
 			case '+':
 				qt = newQuantifierPossessiveToken(q, token)
 				regexPos++
-            }
-        }
-    }
+			}
+		}
+	}
 
-
-	return qt, regexPos, nil
+	return qt, regexPos
 }
 
 func handleVariable(regex []rune, regexPos int) *quantifier {
@@ -95,6 +94,15 @@ func handleVariable(regex []rune, regexPos int) *quantifier {
 		}
 	}
 
-    //regex following { invalid as a quantifier
-    return nil
+	//regex following { invalid as a quantifier
+	return nil
+}
+
+func quantifierDecrement(v int) int {
+	ret := v
+	if v > 0 {
+		ret = v - 1
+	}
+
+	return ret
 }

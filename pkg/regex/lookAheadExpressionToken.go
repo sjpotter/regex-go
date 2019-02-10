@@ -15,33 +15,35 @@ func newLookAheadExpressionToken(net *normalExpresionToken, positive bool) *look
 	}
 }
 
-func (tk *lookAheadExpressionToken) match(m *matcher) (bool, *RegexException) {
-	textPos := m.getTextPos()
-
-	// Empty stack as only matters that its string of tokens match
-    savedState := m.saveAndResetNextStack()
-
-    ret, err := tk.t.match(m);
-    if err != nil {
-    	return false, err
+func (tk *lookAheadExpressionToken) match(m *matcher) bool {
+	if m.tokenState[tk] != nil {
+		delete(m.tokenState, tk)
+		return false
 	}
 
-    m.restoreNextStack(savedState);
-    m.setTextPos(textPos)
+	m1 := m.copyMatcher()
+	m1.t = tk.t
+
+    ret := m1.matchFrom(m.getTextPos())
 
     if tk.positive {
     	if !ret {
-			return false, nil
+			return false
 		}
     } else {
 		if ret {
-			return false, nil
+			return false
 		}
 	}
 
-    return tk.getNext().match(m)
+    m.tokenState[tk] = 1
+    return true
 }
 
 func (tk *lookAheadExpressionToken) testable() bool {
 	return true
+}
+
+func (tk *lookAheadExpressionToken) copy() Token {
+	return newLookAheadExpressionToken(tk.t, tk.positive)
 }

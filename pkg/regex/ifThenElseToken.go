@@ -7,9 +7,9 @@ type ifThenElseToken struct {
 	elseToken Token
 }
 
-func newIfThenElseToken(ifToken, thenToken, elsetoken Token) (Token, *RegexException) {
+func newIfThenElseToken(ifToken, thenToken, elsetoken Token) Token {
 	if !ifToken.testable() {
-		return nil, newRegexException("IfThenElseToken: ifToken not a TestableToken")
+		panic(newRegexException("IfThenElseToken: ifToken not a TestableToken"))
 	}
 
 	return &ifThenElseToken{
@@ -17,50 +17,52 @@ func newIfThenElseToken(ifToken, thenToken, elsetoken Token) (Token, *RegexExcep
 		ifToken:   ifToken,
 		thenToken: thenToken,
 		elseToken: elsetoken,
-	}, nil
+	}
 }
 
-func (tk *ifThenElseToken) match(m *matcher) (bool, *RegexException) {
-	// Empty stack for if clause, as only the tokens within it define true/false for the then/else clauses
-    savedStack := m.saveAndResetNextStack()
-    ret, err := tk.ifToken.match(m)
-    if err != nil {
-    	return false, err
+func (tk *ifThenElseToken) match(m *matcher) bool {
+	if m.tokenState[tk] != nil {
+		if state, ok := m.tokenState[tk].(*nextState); !ok {
+			panic(newRegexException("ifThenElseToken state is not an *nextState"))
+		} else {
+			tk.deleteUntil(tk, state.myNext, m)
+		}
 	}
 
-    // stack is returned for then/else clause as they continue matching next tokens.
-    m.restoreNextStack(savedStack)
+	m1 := m.copyMatcher()
+	m1.t = tk.ifToken
 
-    exec := tk.thenToken
+	ret := m1.matchFrom(m.getTextPos())
+
+	exec := tk.thenToken
     if !ret {
 	    exec = tk.elseToken
     }
 
-    return exec.match(m);
+	tk.insertAfter(tk, exec)
+
+	state := &nextState{
+		myNext:   tk.getNext(),
+	}
+	m.tokenState[tk] = state
+
+    return true
 }
 
-func (tk *ifThenElseToken) reverse() (Token, *RegexException) {
-	ifReversed, err := tk.ifToken.reverse()
-	if err != nil {
-		return nil, err
-	}
-	thenReversed, err := tk.thenToken.reverse()
-	if err != nil {
-		return nil, err
-	}
-	elseReversed, err := tk.elseToken.reverse()
-	if err != nil {
-		return nil, err
-	}
+func (tk *ifThenElseToken) reverse() Token {
+	ifReversed := tk.ifToken.reverse()
+	thenReversed := tk.thenToken.reverse()
+	elseReversed := tk.elseToken.reverse()
 
-	cur, err := newIfThenElseToken(ifReversed, thenReversed, elseReversed)
-	if err != nil {
-		return nil, err
-	}
+	cur := newIfThenElseToken(ifReversed, thenReversed, elseReversed)
 
 	return tk.baseToken.reverseToken(cur)
 }
 
 func (tk *ifThenElseToken) quantifiable() bool {
 	return true
+}
+
+func (tk *ifThenElseToken) copy() Token {
+	return newIfThenElseToken(tk.ifToken, tk.thenToken, tk.elseToken)
 }

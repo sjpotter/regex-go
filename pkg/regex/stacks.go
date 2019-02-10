@@ -65,25 +65,25 @@ func (ss *StringStack) Len() int {
 	return ss.s.Len()
 }
 
-func (ss *StringStack) Peek() string {
+func (ss *StringStack) Peek() *string {
 	ret := ss.s.Peek()
 	if ret == nil {
-		return ""
+		return nil
 	}
 
-	return ret.(string)
+	return ret.(*string)
 }
 
-func (ss *StringStack) Pop() string {
+func (ss *StringStack) Pop() *string {
 	ret := ss.s.Pop()
 	if ret == nil {
-		return ""
+		return nil
 	}
 
-	return ret.(string)
+	return ret.(*string)
 }
 
-func (ss *StringStack) Push(s string) {
+func (ss *StringStack) Push(s *string) {
 	ss.s.Push(s)
 }
 

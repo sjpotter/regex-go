@@ -31,7 +31,7 @@ func main() {
 			fmt.Println(text + " matched regex " + r)
 			fmt.Printf("Groups:")
 			for i, g := range m.GetGroups() {
-				fmt.Printf("%v: %v\n", i, g)
+				fmt.Printf("%v: %v\n", i, *g)
 			}
 		} else {
 			fmt.Println(text + " didn't match regex " + r)

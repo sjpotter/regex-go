@@ -11,25 +11,63 @@ func newAtomicExpressionToken() *atomicExpressionToken {
 	}
 }
 
-func (tk *atomicExpressionToken) match(m *matcher) (bool, *RegexException) {
-	it := tk.altIterator()
-	start := m.getTextPos()
+func (tk *atomicExpressionToken) match(m *matcher) bool {
+	var state *expressionState
 
-	for it.hasNext() {
-		savedStack := m.saveAndResetNextStack()
-
-		ret, err := it.next().match(m)
-		if err != nil {
-			return false, err
+	if m.tokenState[tk] != nil {
+		var ok bool
+		if state, ok = m.tokenState[tk].(*expressionState); !ok {
+			panic(newRegexException("atomicExpressionToken state is not an *expressionState"))
 		}
-		if ret {
-			m.restoreNextStack(savedStack)
-			return tk.getNext().match(m)
+	} else {
+		state = &expressionState{
+			it:       tk.altIterator(),
+			startPos: m.getTextPos(),
+			myNext:   tk.getNext(),
 		}
-
-		m.restoreNextStack(savedStack)
-		m.setTextPos(start)
+		m.tokenState[tk] = state
 	}
 
-	return false, nil
+	if !state.matched && state.it.hasNext() {
+		m.setTextPos(state.startPos)
+		tk.deleteUntil(tk, state.myNext, m)
+		tk.insertAfter(tk, newAtomicEndToken(state))
+		tk.insertAfter(tk, state.it.next())
+
+		return true
+	}
+
+	delete(m.tokenState, tk)
+	return false
+}
+
+func (tk *atomicExpressionToken) copy() Token {
+	aet := &atomicExpressionToken{
+		expressionToken: newExpressionToken(),
+	}
+
+	aet.alts = tk.alts
+
+	return aet
+}
+
+type atomicEndToken struct {
+	*baseToken
+	state *expressionState
+}
+
+func newAtomicEndToken(state *expressionState) *atomicEndToken {
+	return &atomicEndToken{baseToken: newBaseToken(), state: state}
+}
+
+func (tk *atomicEndToken) match(m *matcher) bool {
+	if m.tokenState[tk] != nil {
+		delete(m.tokenState, tk)
+		return false
+	}
+
+	tk.state.matched = true
+
+	m.tokenState[tk] = 1
+	return true
 }

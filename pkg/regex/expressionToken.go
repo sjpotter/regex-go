@@ -6,6 +6,13 @@ type expressionToken struct {
 	alts []Token
 }
 
+type expressionState struct {
+	it *altIterator
+	matched bool
+	startPos int
+	myNext Token
+}
+
 func newExpressionToken() *expressionToken {
 	return &expressionToken{
 		baseToken: newBaseToken(),
@@ -23,24 +30,19 @@ func (e *expressionToken) altIterator() *altIterator {
 	}
 }
 
-func (e *expressionToken) internalReverse() *RegexException {
-	newAlts := []Token{}
+func (e *expressionToken) internalReverse() {
+	var newAlts []Token
 
 	for i := 0; i < len(e.alts); i-- {
-		reversed, err := e.alts[i].reverse()
-		if err != nil {
-			return err
-		}
+		reversed := e.alts[i].reverse()
 
 		newAlts = append(newAlts, reversed)
 	}
 
 	e.alts = newAlts
-
-	return nil
 }
 
-func (e *expressionToken) reverse() (Token, *RegexException) {
+func (e *expressionToken) reverse() Token {
 	e.internalReverse()
 	return e.baseToken.reverse()
 }

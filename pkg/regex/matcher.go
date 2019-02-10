@@ -1,5 +1,9 @@
 package regex
 
+import (
+	"runtime/debug"
+)
+
 type matcher struct {
 	groups     []*StringStack
 	text       []rune
@@ -7,6 +11,7 @@ type matcher struct {
 	direction  int
 	parenCount int
 	captureMap map[int]*normalExpresionToken
+	tokenState map[Token]interface{}
 	t          Token
 
 	//compound tokens have a list of their own tokens to match against and what follows the compound token.
@@ -14,13 +19,23 @@ type matcher struct {
 	nextStack *TokenStack
 }
 
-func NewMatcher(t *tokenizer) (*matcher, *RegexException) {
-	token, err := t.Tokenize()
-	if err != nil {
-		return nil, err
-	}
+func NewMatcher(t *tokenizer) (m *matcher, re *RegexException) {
+	defer func() {
+		e := recover()
+		if e == nil {
+			return
+		}
 
-	groups := []*StringStack{}
+		m = nil
+		ok := false
+		if re, ok = e.(*RegexException); !ok {
+			re = newRegexException(string(debug.Stack()))
+		}
+	}()
+
+	token := t.Tokenize()
+
+	var groups []*StringStack
 	for i := 0; i < t.captureCount; i++ {
 		groups = append(groups, &StringStack{})
 	}
@@ -32,6 +47,7 @@ func NewMatcher(t *tokenizer) (*matcher, *RegexException) {
 		captureMap: t.captureMap,
 		nextStack:  &TokenStack{},
 		groups:     groups,
+		tokenState: make(map[Token]interface{}),
 	}, nil
 }
 
@@ -43,6 +59,7 @@ func (m *matcher) copyMatcher() *matcher {
 		parenCount: m.parenCount,
 		captureMap: m.captureMap,
 		nextStack:  m.nextStack,
+		tokenState: make(map[Token]interface{}),
 	}
 
 	for i := 0; i < m1.parenCount; i++ {
@@ -59,52 +76,90 @@ func (m *matcher) copy(m1 *matcher) {
 	m.nextStack = m1.nextStack
 }
 
-func (m *matcher) Match(text string) (bool, *RegexException) {
+func (m *matcher) Match(text string) (ret bool, re *RegexException) {
+	defer func() {
+		e := recover()
+		if e == nil {
+			return
+		}
+
+		ret = false
+		ok := false
+		if re, ok = e.(*RegexException); !ok {
+			re = newRegexException(string(debug.Stack()))
+		}
+	}()
+
 	runeText := []rune(text)
+	m.text = runeText
 
 	for i := 0; i < len(runeText) || i == 0; i++ {
+		m.tokenState = make(map[Token]interface{})
 		for j := 0; j < m.parenCount; j++ {
 			m.groups[j] = &StringStack{}
 		}
-		m.text = runeText
-		m.nextStack = &TokenStack{}
-		m.textPos = i
-		ret, err := m.t.match(m)
-		if err != nil {
-			return false, err
-		}
-		if ret {
-			m.groups[0].Push(string(m.text[i:m.textPos]))
+		if m.matchFrom(i) {
 			return true, nil
 		}
+
 	}
 
-	return false, nil
+	ret = false
+	re = nil
+
+	return
 }
 
-func (m *matcher) GetGroups() []string {
-	var ret []string
+func (m *matcher) matchFrom(pos int) bool {
+	m.textPos = pos
+	curTok := m.t
+
+	for {
+		ret := curTok.match(m)
+		if ret {
+			curTok = curTok.getNext()
+			if curTok == nil {
+				str := string(m.text[pos:m.textPos])
+				m.groups[0].Push(&str)
+				return true
+			}
+		} else {
+			curTok = curTok.getPrev()
+			if curTok == nil {
+				return false
+			}
+		}
+	}
+}
+
+func (m *matcher) GetGroups() []*string {
+	var ret []*string
 
 	for _, v := range m.groups {
 		if v.Len() > 0 {
 			ret = append(ret, v.Peek())
 		} else {
-			ret = append(ret, "")
+			ret = append(ret, nil)
 		}
 	}
 
 	return ret
 }
 
-func (m *matcher) getGroup(pos int) ([]rune, *RegexException) {
-	return []rune(m.groups[pos].Peek()), nil //FIXME
+func (m *matcher) getGroup(pos int) []rune {
+	s := m.groups[pos].Peek()
+	if s != nil {
+		return []rune(*s)
+	}
+
+	return nil
 }
 
-func (m *matcher) GetGroup(pos int) (string) {
+func (m *matcher) GetGroup(pos int) *string {
 	return  m.groups[pos].Peek()
 }
 
-func (m *matcher) pushGroup(pos int, t string) {
+func (m *matcher) pushGroup(pos int, t *string) {
 	m.groups[pos].Push(t)
 }
 
@@ -162,18 +217,18 @@ func (m *matcher) restoreNextStack(savedStack *TokenStack) {
 	m.nextStack = savedStack
 }
 
-func (m *matcher) matchNextStack() (bool, *RegexException) {
+func (m *matcher) matchNextStack() bool {
 	if m.nextStack.Len() == 0 {
-		return true, nil
+		return true
 	}
 
 	return m.nextStack.Pop().match(m)
 }
 
-func (m *matcher) getCaptureToken(pos int) (*normalExpresionToken, *RegexException) {
+func (m *matcher) getCaptureToken(pos int) *normalExpresionToken {
 	if pos >= len(m.captureMap) {
-		return nil, newRegexException("Trying to retrieve a token for a capture group that doesn't exist");
+		panic(newRegexException("Trying to retrieve a token for a capture group that doesn't exist"))
 	}
 
-	return m.captureMap[pos], nil
+	return m.captureMap[pos]
 }

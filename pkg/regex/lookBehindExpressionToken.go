@@ -15,36 +15,37 @@ func newLookBehindExpressionToken(net *normalExpresionToken, positive bool) *loo
 	}
 }
 
-func (tk *lookBehindExpressionToken) match(m *matcher) (bool, *RegexException) {
-	textPos := m.getTextPos()
-	m.setDirection(-1)
-
-	// Empty stack as only matters that its string of tokens match
-	savedState := m.saveAndResetNextStack()
-
-	ret, err := tk.t.match(m)
-	if err != nil {
-		return false, err
+func (tk *lookBehindExpressionToken) match(m *matcher) bool {
+	if m.tokenState[tk] != nil {
+		delete(m.tokenState, tk)
+		return false
 	}
 
-	m.restoreNextStack(savedState)
+	m1 := m.copyMatcher()
+	m1.t = tk.t
+	m1.setDirection(-1)
 
-	m.setDirection(1)
-	m.setTextPos(textPos)
+
+	ret := m1.matchFrom(m.getTextPos())
 
 	if tk.positive {
 		if !ret {
-			return false, nil
+			return false
 		}
 	} else {
 		if ret {
-			return false, nil
+			return false
 		}
 	}
 
-	return tk.getNext().match(m)
+	m.tokenState[tk] = 1
+	return true
 }
 
 func (tk *lookBehindExpressionToken) testable() bool {
 	return true
+}
+
+func (tk *lookBehindExpressionToken) copy() Token {
+	return newLookBehindExpressionToken(tk.t, tk.positive)
 }

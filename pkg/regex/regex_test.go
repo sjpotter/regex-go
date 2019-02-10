@@ -509,12 +509,12 @@ var _ = Describe("Regex", func() {
 
 		It("Verify Group 0", func() {
 			ret := m.GetGroup(0)
-			Expect(string(ret)).Should(Equal("regexabc"))
+			Expect(*ret).Should(Equal("regexabc"))
 		})
 
 		It("Verify Group 1", func() {
 			ret := m.GetGroup(1)
-			Expect(string(ret)).Should(Equal("abc"))
+			Expect(*ret).Should(Equal("abc"))
 		})
 	})
 

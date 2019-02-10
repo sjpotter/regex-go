@@ -38,7 +38,7 @@ type characterClass struct {
 	all        bool
 }
 
-func newCharacterClass(regex []rune, beg, end int) (*characterClass, *RegexException) {
+func newCharacterClass(regex []rune, beg, end int) *characterClass {
 	i := beg
 	negate := false
 
@@ -47,21 +47,17 @@ func newCharacterClass(regex []rune, beg, end int) (*characterClass, *RegexExcep
 		negated:    make(map[rune]bool),
 	}
 
-	if (end > beg && regex[beg] == '^') {
-		i++;
-		negate = true;
+	if end > beg && regex[beg] == '^' {
+		i++
+		negate = true
 	}
 
 	for ; i <= end; i++ {
 		if regex[i] == '\\' {
-			if err := cc.parseSlash(negate, regex, i); err != nil {
-				return nil, err
-			}
+			cc.parseSlash(negate, regex, i)
 			i++
 		} else if i+2 <= end && regex[i+1] == '-' {
-			if err := cc.parseRange(negate, regex, i); err != nil {
-				return nil, err
-			}
+			cc.parseRange(negate, regex, i)
 			i += 2
 		} else {
 			if !negate {
@@ -72,14 +68,14 @@ func newCharacterClass(regex []rune, beg, end int) (*characterClass, *RegexExcep
 		}
 	}
 
-	return cc, nil
+	return cc
 }
 
 func allCharacters() *characterClass {
 	return &characterClass{all: true}
 }
 
-func (cc *characterClass) parseRange(negate bool, regex []rune, pos int) *RegexException {
+func (cc *characterClass) parseRange(negate bool, regex []rune, pos int) {
 	if regex[pos] < regex[pos+2] {
 		for c := regex[pos]; c <= regex[pos+2]; c++ {
 			if !negate {
@@ -89,15 +85,13 @@ func (cc *characterClass) parseRange(negate bool, regex []rune, pos int) *RegexE
 			}
 		}
 	} else {
-		return newRegexException("Character class ranged have to be in ascending order: " + string(regex[pos:pos+3]));
+		panic(newRegexException("Character class ranged have to be in ascending order: " + string(regex[pos:pos+3])))
 	}
-
-	return nil
 }
 
-func (cc *characterClass) parseSlash(negate bool, regex []rune, regexPos int) *RegexException {
+func (cc *characterClass) parseSlash(negate bool, regex []rune, regexPos int)  {
 	if len(regex) <= regexPos+1 {
-		return newRegexException(`Cannot end a regex with a single \`)
+		panic(newRegexException(`Cannot end a regex with a single \`))
 	}
 
 	character := []rune(regex)[regexPos+ 1]
@@ -117,10 +111,8 @@ func (cc *characterClass) parseSlash(negate bool, regex []rune, regexPos int) *R
 	case 'S':
 		cc.addSet(!negate, whiteSet)
 	default:
-		return newRegexException(fmt.Sprintf("parseSlash: unknown slash case: %v at index: %v", regex[regexPos+1:regexPos+2], regexPos+ 1))
+		panic(newRegexException(fmt.Sprintf("parseSlash: unknown slash case: %v at index: %v", regex[regexPos+1:regexPos+2], regexPos+ 1)))
 	}
-
-	return nil
 }
 
 func (cc *characterClass) addSet(negate bool, set map[rune]bool) {
@@ -134,5 +126,5 @@ func (cc *characterClass) addSet(negate bool, set map[rune]bool) {
 }
 
 func (cc *characterClass) match(r rune) bool {
-	return cc.characters[r] || len(cc.negated) > 0 && !cc.negated[r] || cc.all;
+	return cc.characters[r] || len(cc.negated) > 0 && !cc.negated[r] || cc.all
 }

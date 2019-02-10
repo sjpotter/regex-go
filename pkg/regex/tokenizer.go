@@ -22,27 +22,22 @@ func NewTokenizer(r string) *tokenizer {
 	}
 }
 
-func (t *tokenizer) Tokenize() (Token, *RegexException) {
-	var err *RegexException
-
+func (t *tokenizer) Tokenize() Token {
 	if t.t == nil {
 		capturePos := t.captureCount
 		t.captureCount++
 
-		t.t, err = t.createCapturedExpressionToken(capturePos, 0, len(t.regex))
-		if err != nil {
-			return nil, err
-		}
+		t.t = t.createCapturedExpressionToken(capturePos, 0, len(t.regex))
 	}
 
-	return t.t, nil
+	return t.t
 }
 
-func (t *tokenizer) tokenizeRange(regexPos, end int) (Token, *RegexException) {
+func (t *tokenizer) tokenizeRange(regexPos, end int) Token {
 	var token Token
 
 	if regexPos >= end {
-		return nullToken, nil
+		return nil
 	}
 
 	switch t.regex[regexPos] {
@@ -72,74 +67,66 @@ func (t *tokenizer) tokenizeRange(regexPos, end int) (Token, *RegexException) {
 			}
 		}
 	case '(': // There are many types of clauses that are within parens
-		endParen, err := t.findMatchingParen(regexPos)
-		if err != nil {
-			return nil, err
-		}
+		endParen := t.findMatchingParen(regexPos)
 
 		if t.regex[regexPos+1] == '?' { // There are also many types of clauses that are within (? )
 			switch t.regex[regexPos+2] {
 			case '>':
-				token, err = t.createAtomicExpressionToken(regexPos+3, endParen)
+				token = t.createAtomicExpressionToken(regexPos+3, endParen)
 
 			// Look Ahead does not make sense to be quantified, position resets after they are done
 			case '=': // Positive Look Ahead
-				token, err = t.createLookAheadExpressionToken(regexPos+3, endParen, true)
+				token = t.createLookAheadExpressionToken(regexPos+3, endParen, true)
 			case '!': // Negative Look Ahead
-				token, err = t.createLookAheadExpressionToken(regexPos+3, endParen, false)
+				token = t.createLookAheadExpressionToken(regexPos+3, endParen, false)
 			case '<':
 				switch t.regex[regexPos+3] {
 				case '=': // Positive Look Behind
-					token, err = t.createLookBehindExpressionToken(regexPos+4, endParen, true)
+					token = t.createLookBehindExpressionToken(regexPos+4, endParen, true)
 				case '!': // Negative Look Behind
-					token, err = t.createLookBehindExpressionToken(regexPos+4, endParen, false)
+					token = t.createLookBehindExpressionToken(regexPos+4, endParen, false)
 				default:
-					return nil, newRegexException("Unknown lookbehind grouping")
+					panic(newRegexException("Unknown lookbehind grouping"))
 				}
 			case '(':
-				token, err = t.createIfThenElseToken(regexPos+2, endParen)
+				token = t.createIfThenElseToken(regexPos+2, endParen)
 			case 'R', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9': //regex recursion
-				token, err = t.createRecursiveToken(regexPos+2, endParen)
+				token = t.createRecursiveToken(regexPos+2, endParen)
 			default:
-				return nil, newRegexException("Unknown grouping type")
+				panic(newRegexException("Unknown grouping type"))
 			}
 		} else { //normal capture
 			capture := t.captureCount
 			t.captureCount++
-			token, err = t.createCapturedExpressionToken(capture, regexPos+1, endParen)
+			token = t.createCapturedExpressionToken(capture, regexPos+1, endParen)
 			token = newStartCaptureToken(capture, token)
 		}
 		regexPos = endParen+1
 	}
 
 	if token == nil {
-		var err *RegexException
-
-		if token, regexPos, err = newCharacterToken(t.regex, regexPos); err != nil {
-			return nil, err
-		}
+		token, regexPos = newCharacterToken(t.regex, regexPos)
 	}
 
 	if token.quantifiable() {
 		var qt Token
-		var err *RegexException
 
-		qt, regexPos, err = quantifierParse(token, t.regex, regexPos)
-		if err != nil {
-			return nil, err
-		}
+		qt, regexPos  = quantifierParse(token, t.regex, regexPos)
 		if qt != nil {
 			token = qt
 		}
 	}
 
-	next, err := t.tokenizeRange(regexPos, end)
+	next := t.tokenizeRange(regexPos, end)
 	token.setNext(next)
+	if next != nil {
+		next.setPrev(token)
+	}
 
-	return token, err
+	return token
 }
 
-func (t *tokenizer) createRecursiveToken(regexPos, endParen int) (Token, *RegexException) {
+func (t *tokenizer) createRecursiveToken(regexPos, endParen int) Token {
 	var capture int64
 
 	if t.regex[regexPos] == 'R' && regexPos+1 == endParen {
@@ -149,145 +136,100 @@ func (t *tokenizer) createRecursiveToken(regexPos, endParen int) (Token, *RegexE
 
 		capture, err = strconv.ParseInt(string(t.regex[regexPos:endParen]), 10, 64)
 		if err != nil {
-			return nil, newRegexException(fmt.Sprintf("createRecursiveToken: couldn't parse %v as int", t.regex[regexPos:endParen]))
+			panic(newRegexException(fmt.Sprintf("createRecursiveToken: couldn't parse %v as int", t.regex[regexPos:endParen])))
 		}
 	}
 
-	return newRecursiveToken(int(capture)), nil
+	return newRecursiveToken(int(capture))
 }
 
-func (t *tokenizer) createIfThenElseToken(regexPos, endParen int) (Token, *RegexException) {
-	ifEndParen, err := t.findMatchingParen(regexPos)
-	if err != nil {
-		return nil, err
-	}
+func (t *tokenizer) createIfThenElseToken(regexPos, endParen int) Token {
+	ifEndParen := t.findMatchingParen(regexPos)
 
 	// Support testing if capture group exists.
-	ifToken, err := t.tokenizeRange(regexPos, ifEndParen)
-	if err != nil {
-		return nil, err
-	}
+	ifToken := t.tokenizeRange(regexPos, ifEndParen)
 	var thenToken Token
 	var elseToken Token
 
 	if ifToken.normalExpression() {
 		t.captureCount-- // TODO: HACK as the tokenize on the () string above would have incremented
-		ifToken, err = newCaptureGroupTesterToken(t.regex[regexPos+1:ifEndParen])
-		if err != nil {
-			return nil, err
-		}
+		ifToken = newCaptureGroupTesterToken(t.regex[regexPos+1:ifEndParen])
 	}
 
 	if !ifToken.testable() {
-		return nil, newRegexException(fmt.Sprintf("Didn't parse a testable token from: %v", t.regex[regexPos:ifEndParen]))
+		panic(newRegexException(fmt.Sprintf("Didn't parse a testable token from: %v", t.regex[regexPos:ifEndParen])))
 	}
 
-	pipes, err := t.findPipes(ifEndParen+1, endParen)
-	if err != nil {
-		return nil, err
-	}
+	pipes := t.findPipes(ifEndParen+1, endParen)
 	switch len(pipes) {
 	case 0:
-		thenToken, err = t.createNormalExpressionToken(ifEndParen+1, endParen)
-		if err != nil {
-			return nil, err
-		}
-		elseToken = nullToken
+		thenToken = t.createNormalExpressionToken(ifEndParen+1, endParen)
+		elseToken = nil
 	case 1:
-		thenToken, err = t.createNormalExpressionToken(ifEndParen+1, pipes[0])
-		if err != nil {
-			return nil, err
-		}
-		elseToken, err = t.createNormalExpressionToken(pipes[0]+1, endParen)
-		if err != nil {
-			return nil, err
-		}
+		thenToken = t.createNormalExpressionToken(ifEndParen+1, pipes[0])
+		elseToken = t.createNormalExpressionToken(pipes[0]+1, endParen)
 	default:
-		return nil, newRegexException("Expected at most one pipe in if/then/else token parsing")
+		panic(newRegexException("Expected at most one pipe in if/then/else token parsing"))
 	}
 
 	return newIfThenElseToken(ifToken, thenToken, elseToken)
 }
 
-func (t *tokenizer) createLookAheadExpressionToken(regexPos, endParen int, positive bool) (Token, *RegexException) {
-	net, err := t.createNormalExpressionToken(regexPos, endParen)
-	if err != nil {
-		return nil, err
-	}
+func (t *tokenizer) createLookAheadExpressionToken(regexPos, endParen int, positive bool) Token {
+	net := t.createNormalExpressionToken(regexPos, endParen)
 
-	return newLookAheadExpressionToken(net, positive), nil
+	return newLookAheadExpressionToken(net, positive)
 }
 
-func (t *tokenizer) createLookBehindExpressionToken(regexPos, endParen int, positive bool) (Token, *RegexException) {
-	net, err := t.createNormalExpressionToken(regexPos, endParen)
-	if err != nil {
-		return nil, err
-	}
+func (t *tokenizer) createLookBehindExpressionToken(regexPos, endParen int, positive bool) Token {
+	net := t.createNormalExpressionToken(regexPos, endParen)
 
-	err = net.internalReverse()
-	if err != nil {
-		return nil, err
-	}
+	net.internalReverse()
 
-	return newLookBehindExpressionToken(net, positive), nil
+	return newLookBehindExpressionToken(net, positive)
 }
 
-func (t *tokenizer) createCapturedExpressionToken(capturePos int, regexPos int, endParen int) (*normalExpresionToken, *RegexException) {
-	net, err := t.createNormalExpressionToken(regexPos, endParen)
-	if err != nil {
-		return nil, err
-	}
+func (t *tokenizer) createCapturedExpressionToken(capturePos int, regexPos int, endParen int) *normalExpresionToken {
+	net := t.createNormalExpressionToken(regexPos, endParen)
 
 	if capturePos != -1 {
 		t.captureMap[capturePos] = net
 	}
 
-	return net, nil
+	return net
 }
 
-func (t *tokenizer) createAtomicExpressionToken(regexPos, endParen int) (*atomicExpressionToken, *RegexException) {
+func (t *tokenizer) createAtomicExpressionToken(regexPos, endParen int) *atomicExpressionToken {
 	aet := newAtomicExpressionToken()
-	if err := t.parseExpression(aet.expressionToken, regexPos, endParen); err != nil {
-		return nil, err
-	}
+	t.parseExpression(aet.expressionToken, regexPos, endParen)
 
-	return aet, nil
+	return aet
 }
 
-func (t *tokenizer) createNormalExpressionToken(regexPos, endParen int) (*normalExpresionToken, *RegexException) {
+func (t *tokenizer) createNormalExpressionToken(regexPos, endParen int) *normalExpresionToken {
 	net := newNormalExpressionToken()
 
-	if err := t.parseExpression(net.expressionToken, regexPos, endParen); err != nil {
-		return nil, err
-	}
+	t.parseExpression(net.expressionToken, regexPos, endParen)
 
-	return net, nil
+	return net
 }
 
-func (t *tokenizer) parseExpression(et *expressionToken, regexPos, endParen int) *RegexException {
-	pipes, err := t.findPipes(regexPos, endParen)
+func (t *tokenizer) parseExpression(et *expressionToken, regexPos, endParen int) {
+	pipes := t.findPipes(regexPos, endParen)
 
 	for _, pipe := range pipes {
-		alt, err := t.tokenizeRange(regexPos, pipe)
-		if err != nil {
-			return err
-		}
+		alt := t.tokenizeRange(regexPos, pipe)
 		et.addAlt(alt)
 		regexPos = pipe + 1
 	}
 
-	alt, err := t.tokenizeRange(regexPos, endParen)
-	if err != nil {
-		return err
-	}
+	alt := t.tokenizeRange(regexPos, endParen)
 	et.addAlt(alt)
-
-	return nil
 }
 
 // find the pipes that separate expressions at the same level within the start/end indices.
 // if a section is enclosed in parens, its not at the same level, and hence not a pipe we care about
-func (t *tokenizer) findPipes(start, end int) ([]int, *RegexException) {
+func (t *tokenizer) findPipes(start, end int) []int {
 	var parens []int
 	var pipes []int
 
@@ -301,7 +243,7 @@ func (t *tokenizer) findPipes(start, end int) ([]int, *RegexException) {
 	case '(':
 		parens = append(parens, start)
 	case ')':
-		return nil, newRegexException("unbalanced parens")
+		panic(newRegexException("unbalanced parens"))
 	}
 
 	// As we are searching for alternates, only find pipes that are not in sub expressions (i.e. surrounded by ()
@@ -316,7 +258,7 @@ func (t *tokenizer) findPipes(start, end int) ([]int, *RegexException) {
 		case ')':
 			if !slashIsEscape || t.regex[i-1] != '\\' {
 				if len(parens) == 0 {
-					return nil, newRegexException("unbalanced parens")
+					panic(newRegexException("unbalanced parens"))
 				}
 				parens = parens[:len(parens)-1]
 			}
@@ -327,12 +269,12 @@ func (t *tokenizer) findPipes(start, end int) ([]int, *RegexException) {
 		}
 	}
 
-	return pipes, nil
+	return pipes
 }
 
-func (t *tokenizer) findMatchingParen(start int) (int, *RegexException) {
+func (t *tokenizer) findMatchingParen(start int) int {
 	if t.regex[start] != '(' {
-		return -1, newRegexException("findMatchingParen: didn't start with an open paren")
+		panic(newRegexException("findMatchingParen: didn't start with an open paren"))
 	}
 
 	var parens []int
@@ -354,10 +296,10 @@ func (t *tokenizer) findMatchingParen(start int) (int, *RegexException) {
 				parens = parens[:len(parens)-1]
 			}
 			if len(parens) == 0 {
-				return i, nil
+				return i
 			}
 		}
 	}
 
-	return -1, newRegexException("unbalanced parens")
+	panic(newRegexException("unbalanced parens"))
 }

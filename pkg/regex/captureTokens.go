@@ -14,19 +14,36 @@ func newStartCaptureToken(capture int, t Token) *startCaptureToken {
 	}
 }
 
-func (tk *startCaptureToken) match(m *matcher) (bool, *RegexException) {
+func (tk *startCaptureToken) match(m *matcher) bool {
+	if m.tokenState[tk] != nil {
+		if state, ok := m.tokenState[tk].(*nextState); !ok {
+			panic(newRegexException("startCaptureToken state is not an *startCaptureState"))
+		} else {
+			tk.deleteUntil(tk, state.myNext, m)
+		}
+	} else {
+		state := &nextState{
+			myNext:   tk.getNext(),
+		}
+		m.tokenState[tk] = state
+	}
+
 	startPos := m.getTextPos()
-
 	end := newEndCaptureToken(tk.capture, startPos)
-	end.setNext(tk.getNext())
-	m.pushNextStack(end)
+	tk.insertAfter(tk, end)
+	tk.insertAfter(tk, tk.t)
 
-	return tk.t.match(m)
+	return true
 }
 
 func (tk *startCaptureToken) quantifiable() bool {
 	return true
 }
+
+func (tk *startCaptureToken) copy() Token {
+	return newStartCaptureToken(tk.capture, tk.t)
+}
+
 
 type endCaptureToken struct {
 	*baseToken
@@ -42,21 +59,19 @@ func newEndCaptureToken(capture, startPos int) *endCaptureToken {
 	}
 }
 
-func (tk *endCaptureToken) match(m *matcher) (bool, *RegexException) {
+func (tk *endCaptureToken) match(m *matcher) bool {
+	if m.tokenState[tk] != nil { //this isn't a valid path, so this isn't a valid capture
+		delete(m.tokenState, tk)
+		m.popGroup(tk.capture)
+		return false
+	}
+
+	m.tokenState[tk] = 1
+
 	subRuneSlice := m.getText()[tk.startPos:m.getTextPos()]
 
-	m.pushGroup(tk.capture,string(subRuneSlice))
+	s := string(subRuneSlice)
+	m.pushGroup(tk.capture, &s)
 
-	ret, err := tk.getNext().match(m)
-	if err != nil {
-		return false, err
-	}
-	if ret == true {
-		return true, nil
-	}
-
-	//this isn't a valid path, so this isn't a valid capture
-	m.popGroup(tk.capture)
-
-	return false, nil
+	return true
 }

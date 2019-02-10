@@ -15,23 +15,23 @@ func newRecursiveToken(capture int) *recursiveToken {
 	}
 }
 
-func (tk *recursiveToken) match(m *matcher) (bool, *RegexException) {
-	t, err := m.getCaptureToken(tk.group)
-	if err != nil {
-		return false, err
-	}
-
-    // As recursive consumes state, need to have nextStack work correctly, this token resets the matcher state
-    // for future matches after it executes
-    m.pushNextStack(newRecursiveEndToken(m, tk.getNext()))
+func (tk *recursiveToken) match(m *matcher) bool {
+	t := m.getCaptureToken(tk.group)
 
     m1 := m.copyMatcher()
+    m1.t = t
 
-    return t.matchNoFollow(m1)
+    ret := m1.matchFrom(m.getTextPos())
+    if ret {
+    	m.copy(m1)
+    	return true
+	}
+
+    return false
 }
 
-func (tk *recursiveToken) reverse() (Token, *RegexException) {
-	return nil, newRegexException("Can't LookBehind with Recursive Tokens")
+func (tk *recursiveToken) reverse() Token {
+	panic(newRegexException("Can't LookBehind with Recursive Tokens"))
 }
 
 func (tk *recursiveToken) quantifiable() bool {
@@ -55,7 +55,7 @@ func newRecursiveEndToken(m *matcher, next Token) *recursiveEndToken {
 	return ret
 }
 
-func (tk *recursiveEndToken) match(m *matcher) (bool, *RegexException) {
-	tk.mOld.copy(m);
-	return tk.getNext().match(tk.mOld);
+func (tk *recursiveEndToken) match(m *matcher) bool {
+	tk.mOld.copy(m)
+	return tk.getNext().match(tk.mOld)
 }

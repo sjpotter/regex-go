@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	. "github.com/yucs/spotter/regex/pkg/regex"
+	. "github.com/sjpotter/regex-go/pkg/regex"
 )
 
 var _ = Describe("Recursive", func() {

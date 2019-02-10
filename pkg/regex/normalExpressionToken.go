@@ -10,42 +10,44 @@ func newNormalExpressionToken() *normalExpresionToken {
 	}
 }
 
-func (ne *normalExpresionToken) match(m *matcher) (bool, *RegexException) {
-	return ne.internalMatch(m, true)
-}
+func (tk *normalExpresionToken) match(m *matcher) bool {
+	var state *expressionState
 
-func (ne *normalExpresionToken) matchNoFollow(m *matcher) (bool, *RegexException) {
-	return ne.internalMatch(m, false)
-}
-
-func (ne *normalExpresionToken) internalMatch(m *matcher, goNext bool) (bool, *RegexException) {
-	it := ne.altIterator()
-
-	start := m.getTextPos()
-
-	for it.hasNext() {
-		savedStack := m.saveNextStack()
-
-		if goNext {
-			m.pushNextStack(ne.next)
+	if m.tokenState[tk] != nil {
+		var ok bool
+		if state, ok = m.tokenState[tk].(*expressionState); !ok {
+			panic(newRegexException("normalExpresionToken state is not an *expressionState"))
 		}
-
-		t := it.next()
-		ret, err := t.match(m)
-		if err != nil {
-			return false, nil
+	} else {
+		state = &expressionState{
+			it:       tk.altIterator(),
+			startPos: m.getTextPos(),
+			myNext:   tk.getNext(),
 		}
-		if ret {
-			return ret, nil
-		}
-
-		m.restoreNextStack(savedStack)
-		m.setTextPos(start)
+		m.tokenState[tk] = state
 	}
 
-	return false, nil
+	if state.it.hasNext() {
+		m.setTextPos(state.startPos)
+		tk.deleteUntil(tk, state.myNext, m)
+		tmp := state.it.next()
+		tk.insertAfter(tk, tmp)
+		return true
+	}
+
+	delete(m.tokenState, tk)
+	return false
 }
 
-func (ne *normalExpresionToken) normalExpression() bool {
+func (tk *normalExpresionToken) normalExpression() bool {
 	return true
+}
+
+func (tk *normalExpresionToken) copy() Token {
+	net := &normalExpresionToken{
+		expressionToken: newExpressionToken(),
+	}
+	net.alts = tk.alts
+
+	return net
 }
