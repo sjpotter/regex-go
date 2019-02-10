@@ -6,14 +6,12 @@ type Token interface {
 	setNext(Token)
 	getPrev() Token
 	setPrev(Token)
-	reverse() Token
-	reverseToken(cur Token) Token
-	captureGroup() int
 	copy() Token
+
+	// "is a" interface type methods
 	quantifiable() bool
 	testable() bool
 	normalExpression() bool
-	delete(Token)
 }
 
 type baseToken struct {
@@ -44,31 +42,6 @@ func (tk *baseToken) getPrev() Token {
 
 func (tk *baseToken) setPrev(p Token) {
 	tk.prev = p
-}
-
-func (tk *baseToken) reverse() Token {
-	return tk.reverseToken(tk)
-}
-
-func (tk *baseToken) reverseToken(cur Token) Token {
-	if cur.getNext() != nil {
-		return cur
-	}
-
-	prev := cur.getNext().reverse()
-	cur.setNext(nil)
-
-	tmp := prev
-	for tmp.getNext() != nil {
-		tmp = tmp.getNext()
-	}
-	tmp.setNext(tk)
-
-	return prev
-}
-
-func (tk *baseToken) captureGroup() int {
-	return -1
 }
 
 func (tk *baseToken) copy() Token {
@@ -132,17 +105,6 @@ func (tk *baseToken) deleteUntil(self Token, n Token, m *matcher) {
 	for cur != nil && cur != n {
 		delete(m.tokenState, cur)
 		cur = cur.getNext()
-	}
-}
-
-func (tk *baseToken) delete(self Token) {
-	prev := self.getPrev()
-	next := self.getNext()
-	if prev != nil {
-		prev.setNext(next)
-	}
-	if next != nil {
-		next.setPrev(prev)
 	}
 }
 

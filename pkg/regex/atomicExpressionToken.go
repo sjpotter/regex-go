@@ -25,7 +25,7 @@ func (tk *atomicExpressionToken) match(m *matcher) bool {
 		}
 	} else {
 		state = &expressionState{
-			it:       tk.altIterator(),
+			it:       tk.altIterator(m.getDirection()),
 			startPos: m.getTextPos(),
 			myNext:   tk.getNext(),
 		}

@@ -24,42 +24,35 @@ func (e *expressionToken) addAlt(t Token) {
 	e.alts = append(e.alts, t)
 }
 
-func (e *expressionToken) altIterator() *altIterator {
+func (e *expressionToken) altIterator(dir int) *altIterator {
+	pos := 0
+	if dir == -1 {
+		pos = len(e.alts)-1
+	}
 	return &altIterator{
 		alt: e.alts,
-		pos: 0,
+		pos: pos,
+		dir: dir,
 	}
-}
-
-func (e *expressionToken) internalReverse() {
-	var newAlts []Token
-
-	for i := 0; i < len(e.alts); i-- {
-		reversed := e.alts[i].reverse()
-
-		newAlts = append(newAlts, reversed)
-	}
-
-	e.alts = newAlts
-}
-
-func (e *expressionToken) reverse() Token {
-	e.internalReverse()
-	return e.baseToken.reverse()
 }
 
 type altIterator struct {
 	alt []Token
 	pos int
+	dir int
 }
 
 func (ai *altIterator) hasNext() bool {
-	return len(ai.alt) > ai.pos
+	if ai.dir == 1 {
+		return len(ai.alt) > ai.pos
+	} else {
+		return ai.pos >= 0
+	}
 }
 
 func (ai *altIterator) next() Token {
 	ret := ai.alt[ai.pos]
-	ai.pos++
+	ai.pos += ai.dir
 
 	return ret
 }

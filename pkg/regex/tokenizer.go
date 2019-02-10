@@ -99,6 +99,7 @@ func (t *tokenizer) tokenizeRange(regexPos, end int) Token {
 		} else { //normal capture
 			capture := t.captureCount
 			t.captureCount++
+
 			token = t.createCapturedExpressionToken(capture, regexPos+1, endParen)
 			token = newStartCaptureToken(capture, token)
 		}
@@ -184,8 +185,6 @@ func (t *tokenizer) createLookAheadExpressionToken(regexPos, endParen int, posit
 
 func (t *tokenizer) createLookBehindExpressionToken(regexPos, endParen int, positive bool) Token {
 	net := t.createNormalExpressionToken(regexPos, endParen)
-
-	net.internalReverse()
 
 	return newLookBehindExpressionToken(net, positive)
 }

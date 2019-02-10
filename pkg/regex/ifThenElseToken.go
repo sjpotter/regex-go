@@ -50,13 +50,8 @@ func (tk *ifThenElseToken) match(m *matcher) bool {
 }
 
 func (tk *ifThenElseToken) reverse() Token {
-	ifReversed := tk.ifToken.reverse()
-	thenReversed := tk.thenToken.reverse()
-	elseReversed := tk.elseToken.reverse()
+	panic(newRegexException("Can't LookBehind with ifThenElse Token"))
 
-	cur := newIfThenElseToken(ifReversed, thenReversed, elseReversed)
-
-	return tk.baseToken.reverseToken(cur)
 }
 
 func (tk *ifThenElseToken) quantifiable() bool {
