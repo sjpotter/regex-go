@@ -19,6 +19,11 @@ type baseToken struct {
 	prev Token
 }
 
+type nextState struct {
+	myNext   Token
+	startPos int
+}
+
 // super() like function
 func newBaseToken() *baseToken {
 	return &baseToken{}
@@ -45,7 +50,7 @@ func (tk *baseToken) setPrev(p Token) {
 }
 
 func (tk *baseToken) copy() Token {
-	panic(newRegexException("Unimplemented: always needs to be overriden"))
+	panic(newRegexException("copy() unimplemented: always needs to be overriden"))
 }
 
 func (tk *baseToken) quantifiable() bool {
@@ -106,9 +111,4 @@ func (tk *baseToken) deleteUntil(self Token, n Token, m *matcher) {
 		delete(m.tokenState, cur)
 		cur = cur.getNext()
 	}
-}
-
-type nextState struct {
-	myNext   Token
-	startPos int
 }
