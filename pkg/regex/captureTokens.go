@@ -20,6 +20,7 @@ func (tk *startCaptureToken) match(m *matcher) bool {
 			panic(newRegexException("startCaptureToken state is not an *startCaptureState"))
 		} else {
 			tk.deleteUntil(tk, state.myNext, m)
+			return false
 		}
 	} else {
 		state := &nextState{
@@ -74,4 +75,8 @@ func (tk *endCaptureToken) match(m *matcher) bool {
 	m.pushGroup(tk.capture, &s)
 
 	return true
+}
+
+func (tk *endCaptureToken) copy() Token {
+	return &endCaptureToken{baseToken: newBaseToken(), capture: tk.capture,	startPos: tk.startPos}
 }

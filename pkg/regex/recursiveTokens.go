@@ -16,7 +16,12 @@ func newRecursiveToken(capture int) *recursiveToken {
 }
 
 func (tk *recursiveToken) match(m *matcher) bool {
-	t := m.getCaptureToken(tk.group)
+	if m.tokenState[tk] != nil { //this isn't a valid path, so this isn't a valid capture
+		delete(m.tokenState, tk)
+		return false
+	}
+
+	t := m.getCaptureToken(tk.group).copy()
 
     m1 := m.copyMatcher()
     m1.t = t
@@ -24,10 +29,15 @@ func (tk *recursiveToken) match(m *matcher) bool {
     ret := m1.matchFrom(m.getTextPos())
     if ret {
     	m.copy(m1)
+    	m.tokenState[tk] = 1
     	return true
 	}
 
     return false
+}
+
+func (tk *recursiveToken) copy() Token {
+	return &recursiveToken{baseToken: newBaseToken(), group: tk.group, recursive: tk.recursive}
 }
 
 func (tk *recursiveToken) reverse() Token {

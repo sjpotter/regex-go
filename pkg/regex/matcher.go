@@ -13,10 +13,6 @@ type matcher struct {
 	captureMap map[int]*normalExpresionToken
 	tokenState map[Token]interface{}
 	t          Token
-
-	//compound tokens have a list of their own tokens to match against and what follows the compound token.
-	//what follows is what's pushed onto the nextStack
-	nextStack *TokenStack
 }
 
 func NewMatcher(t *tokenizer) (m *matcher, re *RegexException) {
@@ -45,7 +41,6 @@ func NewMatcher(t *tokenizer) (m *matcher, re *RegexException) {
 		direction:  1,
 		parenCount: t.captureCount,
 		captureMap: t.captureMap,
-		nextStack:  &TokenStack{},
 		groups:     groups,
 		tokenState: make(map[Token]interface{}),
 	}, nil
@@ -58,7 +53,6 @@ func (m *matcher) copyMatcher() *matcher {
 		direction:  1,
 		parenCount: m.parenCount,
 		captureMap: m.captureMap,
-		nextStack:  m.nextStack,
 		tokenState: make(map[Token]interface{}),
 	}
 
@@ -73,7 +67,6 @@ func (m *matcher) copyMatcher() *matcher {
 
 func (m *matcher) copy(m1 *matcher) {
 	m.textPos = m1.textPos
-	m.nextStack = m1.nextStack
 }
 
 func (m *matcher) Match(text string) (ret bool, re *RegexException) {
@@ -98,7 +91,8 @@ func (m *matcher) Match(text string) (ret bool, re *RegexException) {
 		for j := 0; j < m.parenCount; j++ {
 			m.groups[j] = &StringStack{}
 		}
-		if m.matchFrom(i) {
+		m.t = m.getCaptureToken(0).copy()
+ 		if m.matchFrom(i) {
 			return true, nil
 		}
 
@@ -112,8 +106,8 @@ func (m *matcher) Match(text string) (ret bool, re *RegexException) {
 
 func (m *matcher) matchFrom(pos int) bool {
 	m.textPos = pos
-	curTok := m.t
 
+	curTok := m.t
 	for {
 		ret := curTok.match(m)
 		if ret {
@@ -185,44 +179,6 @@ func (m *matcher) getDirection() int {
 
 func (m *matcher) setDirection(dir int) {
 	m.direction = dir
-}
-
-func (m *matcher) saveNextStack() *TokenStack {
-	savedState := m.nextStack
-	m.nextStack = &TokenStack{}
-	m.nextStack.Copy(savedState)
-
-	return savedState
-}
-
-func (m *matcher) saveAndResetNextStack() *TokenStack {
-	savedState := m.saveNextStack()
-	m.nextStack = &TokenStack{}
-
-	return savedState
-}
-
-func (m *matcher) pushNextStack(t Token) {
-	m.nextStack.Push(t)
-}
-
-func (m *matcher) saveThenPushNextStack(t Token) *TokenStack {
-	saved := m.saveNextStack()
-	m.pushNextStack(t)
-
-	return saved
-}
-
-func (m *matcher) restoreNextStack(savedStack *TokenStack) {
-	m.nextStack = savedStack
-}
-
-func (m *matcher) matchNextStack() bool {
-	if m.nextStack.Len() == 0 {
-		return true
-	}
-
-	return m.nextStack.Pop().match(m)
 }
 
 func (m *matcher) getCaptureToken(pos int) *normalExpresionToken {

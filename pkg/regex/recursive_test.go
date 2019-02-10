@@ -21,7 +21,7 @@ var _ = Describe("Recursive", func() {
 			ret, err := m.Match("aaazzz123")
 			Expect(ret).Should(BeTrue())
 			Expect(err).Should(BeNil())
-			Expect(m.GetGroup(0)).Should(Equal("aaazzz"))
+			Expect(*m.GetGroup(0)).Should(Equal("aaazzz"))
 		})
 
 		It("Test 2", func() {
@@ -44,9 +44,9 @@ var _ = Describe("Recursive", func() {
 			ret, err := m.Match("abba")
 			Expect(ret).Should(BeTrue())
 			Expect(err).Should(BeNil())
-			Expect(m.GetGroup(0)).Should(Equal("abba"))
-			Expect(m.GetGroup(1)).Should(Equal("a"))
-			Expect(m.GetGroup(2)).Should(Equal("a"))
+			Expect(*m.GetGroup(0)).Should(Equal("abba"))
+			Expect(*m.GetGroup(1)).Should(Equal("a"))
+			Expect(*m.GetGroup(2)).Should(Equal("a"))
 		})
 	})
 })

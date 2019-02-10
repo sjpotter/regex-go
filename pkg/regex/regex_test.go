@@ -534,7 +534,7 @@ var _ = Describe("Regex", func() {
 		})
 
 		It("Test 1, Verify Group 1", func() {
-			Expect(m.GetGroup(1)).Should(Equal("regex"))
+			Expect(*m.GetGroup(1)).Should(Equal("regex"))
 		})
 
 		It("Test 2", func() {
@@ -544,14 +544,15 @@ var _ = Describe("Regex", func() {
 		})
 
 		It("Test 2, Verify Group 2", func() {
-			Expect(m.GetGroup(2)).Should(Equal("abc"))
+			Expect(*m.GetGroup(2)).Should(Equal("abc"))
 		})
 
 		It("Test 2, Verify All Groups", func() {
 			ret := m.GetGroups()
-			Expect(ret[0]).Should(Equal("abc"))
-			Expect(ret[1]).Should(Equal("")) // Thoughts are this is incorrect as should be nil, not empty string
-			Expect(ret[2]).Should(Equal("abc"))
+			var s *string //nil string to as type needs to fit interface type of string
+			Expect(*ret[0]).Should(Equal("abc"))
+			Expect(ret[1]).Should(Equal(s)) //see above
+			Expect(*ret[2]).Should(Equal("abc"))
 		})
 	})
 })

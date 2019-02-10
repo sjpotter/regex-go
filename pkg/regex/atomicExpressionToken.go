@@ -71,3 +71,7 @@ func (tk *atomicEndToken) match(m *matcher) bool {
 	m.tokenState[tk] = 1
 	return true
 }
+
+func (tk *atomicEndToken) copy() Token {
+	return &atomicEndToken{baseToken: newBaseToken(), state: tk.state}
+}

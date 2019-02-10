@@ -193,7 +193,7 @@ func (t *tokenizer) createCapturedExpressionToken(capturePos int, regexPos int, 
 	net := t.createNormalExpressionToken(regexPos, endParen)
 
 	if capturePos != -1 {
-		t.captureMap[capturePos] = net
+		t.captureMap[capturePos] = net.copy().(*normalExpresionToken)
 	}
 
 	return net

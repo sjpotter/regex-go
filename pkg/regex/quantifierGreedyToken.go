@@ -28,7 +28,10 @@ func (tk *quantifierGreedyToken) match(m *matcher) bool {
 			return false
 		}
 
-		if tk.matched {
+		if tk.matched || (tk.paired != nil && tk.paired.matched) {
+			if tk.paired != nil {
+				tk.paired.matched = false
+			}
 			tk.matched = false
 			m.setTextPos(state.startPos)
 			return true
@@ -41,30 +44,23 @@ func (tk *quantifierGreedyToken) match(m *matcher) bool {
 	tk.matched = false
 	if tk.paired != nil {
 		tk.paired.matched = true
-		if pairedState, ok :=  m.tokenState[tk.paired].(*nextState); ok {
-			pairedState.startPos = m.getTextPos()
-		} else {
-			panic(newRegexException("Didn't get a *nextState for paired quantifier token"))
-		}
+	} else { // if 0 max matches, can still continue from here?
+		tk.matched = true
 	}
 
-	if tk.min != 0 || tk.max != 0 {
-		m.tokenState[tk] = &nextState{myNext: tk.getNext(), startPos: m.getTextPos()}
+	m.tokenState[tk] = &nextState{myNext: tk.getNext(), startPos: m.getTextPos()}
 
+	if tk.min != 0 || tk.max != 0 {
 		nextQt := tk.cloneDecrement()
 		nextQt.paired = tk
-
-		// if 0 max matches, can still continue from here?
-		if tk.paired == nil {
-			tk.matched = true
-		}
 
 		tk.insertAfter(tk, nextQt)
 		tk.insertAfter(tk, tk.t)
 		return true
 	}
 
-	return false
+	tk.matched = true
+	return true
 }
 
 func (tk *quantifierGreedyToken) cloneDecrement() *quantifierGreedyToken {
