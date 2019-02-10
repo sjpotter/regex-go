@@ -4,7 +4,7 @@ type quantifierNonGreedyToken struct {
 	*baseToken
 	min int
 	max int
-	t Token
+	t   Token
 }
 
 func newQuantifierNonGreedyToken(q *quantifier, t Token) *quantifierNonGreedyToken {
@@ -56,4 +56,3 @@ func (tk *quantifierNonGreedyToken) cloneDecrement() *quantifierNonGreedyToken {
 
 	return newQt
 }
-

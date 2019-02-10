@@ -2,10 +2,10 @@ package regex
 
 type quantifierGreedyToken struct {
 	*baseToken
-	min int
-	max int
-	t Token
-	paired *quantifierGreedyToken
+	min     int
+	max     int
+	t       Token
+	paired  *quantifierGreedyToken
 	matched bool
 }
 

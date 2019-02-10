@@ -2,10 +2,10 @@ package regex
 
 type quantifierPossessiveToken struct {
 	*baseToken
-	min int
-	max int
-	t Token
-	paired *quantifierPossessiveToken
+	min     int
+	max     int
+	t       Token
+	paired  *quantifierPossessiveToken
 	matched bool
 }
 

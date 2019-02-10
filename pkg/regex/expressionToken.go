@@ -7,12 +7,13 @@ type expressionToken struct {
 }
 
 type expressionState struct {
-	it *altIterator
-	matched bool
+	it       *altIterator
+	matched  bool
 	startPos int
-	myNext Token
+	myNext   Token
 }
 
+// "Base Class" for expression tokens, to keep alt handling in a single place
 func newExpressionToken() *expressionToken {
 	return &expressionToken{
 		baseToken: newBaseToken(),

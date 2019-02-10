@@ -11,7 +11,7 @@ var (
 )
 
 func init() {
-	for c :='0'; c <= '9'; c++ {
+	for c := '0'; c <= '9'; c++ {
 		digitSet[c] = true
 		wordSet[c] = true
 	}
@@ -89,12 +89,12 @@ func (cc *characterClass) parseRange(negate bool, regex []rune, pos int) {
 	}
 }
 
-func (cc *characterClass) parseSlash(negate bool, regex []rune, regexPos int)  {
+func (cc *characterClass) parseSlash(negate bool, regex []rune, regexPos int) {
 	if len(regex) <= regexPos+1 {
 		panic(newRegexException(`Cannot end a regex with a single \`))
 	}
 
-	character := []rune(regex)[regexPos+ 1]
+	character := []rune(regex)[regexPos+1]
 	switch character {
 	case '.', '-', '\\', '+', '*', '?', '^', '$', '|', '(', ')':
 		cc.characters[character] = true
@@ -111,7 +111,7 @@ func (cc *characterClass) parseSlash(negate bool, regex []rune, regexPos int)  {
 	case 'S':
 		cc.addSet(!negate, whiteSet)
 	default:
-		panic(newRegexException(fmt.Sprintf("parseSlash: unknown slash case: %v at index: %v", regex[regexPos+1:regexPos+2], regexPos+ 1)))
+		panic(newRegexException(fmt.Sprintf("parseSlash: unknown slash case: %v at index: %v", regex[regexPos+1:regexPos+2], regexPos+1)))
 	}
 }
 

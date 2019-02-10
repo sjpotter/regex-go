@@ -45,13 +45,13 @@ func (tk *anchorToken) match(m *matcher) bool {
 				}
 			}
 		} else if textPos == len(text) {
-			if unicode.IsLetter(text[textPos - 1]) {
+			if unicode.IsLetter(text[textPos-1]) {
 				if negative { //don't want to match words breaks
 					return false
 				}
 			}
 		} else {
-			if (unicode.IsSpace(text[textPos -1]) && unicode.IsLetter(text[textPos])) ||
+			if (unicode.IsSpace(text[textPos-1]) && unicode.IsLetter(text[textPos])) ||
 				(unicode.IsSpace(text[textPos]) && unicode.IsLetter(text[textPos-1])) {
 				if negative { // don't want to match words breaks
 					return false

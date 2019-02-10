@@ -2,9 +2,9 @@ package regex
 
 type lookAheadExpressionToken struct {
 	*baseToken
-	t *normalExpresionToken
+	t        *normalExpresionToken
 	positive bool
-	laet bool
+	laet     bool
 }
 
 func newLookAheadExpressionToken(net *normalExpresionToken, positive bool) *lookAheadExpressionToken {
@@ -24,20 +24,20 @@ func (tk *lookAheadExpressionToken) match(m *matcher) bool {
 	m1 := m.copyMatcher()
 	m1.t = tk.t
 
-    ret := m1.matchFrom(m.getTextPos())
+	ret := m1.matchFrom(m.getTextPos())
 
-    if tk.positive {
-    	if !ret {
+	if tk.positive {
+		if !ret {
 			return false
 		}
-    } else {
+	} else {
 		if ret {
 			return false
 		}
 	}
 
-    m.tokenState[tk] = 1
-    return true
+	m.tokenState[tk] = 1
+	return true
 }
 
 func (tk *lookAheadExpressionToken) testable() bool {

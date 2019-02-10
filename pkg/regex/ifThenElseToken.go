@@ -35,18 +35,18 @@ func (tk *ifThenElseToken) match(m *matcher) bool {
 	ret := m1.matchFrom(m.getTextPos())
 
 	exec := tk.thenToken
-    if !ret {
-	    exec = tk.elseToken
-    }
+	if !ret {
+		exec = tk.elseToken
+	}
 
 	tk.insertAfter(tk, exec)
 
 	state := &nextState{
-		myNext:   tk.getNext(),
+		myNext: tk.getNext(),
 	}
 	m.tokenState[tk] = state
 
-    return true
+	return true
 }
 
 func (tk *ifThenElseToken) reverse() Token {

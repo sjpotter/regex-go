@@ -19,7 +19,7 @@ func main() {
 		t := regex.NewTokenizer(r)
 		m, err := regex.NewMatcher(t)
 		if err != nil {
-			fmt.Printf("matcher failed: %v\n", err)
+			fmt.Printf("matcher error: %v\n", err)
 			continue
 		}
 
@@ -37,7 +37,6 @@ func main() {
 			fmt.Println(text + " didn't match regex " + r)
 
 		}
-
 
 	}
 }

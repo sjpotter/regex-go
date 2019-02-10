@@ -4,7 +4,7 @@ type lookBehindExpressionToken struct {
 	*baseToken
 	t        *normalExpresionToken
 	positive bool
-	lbet bool
+	lbet     bool
 }
 
 func newLookBehindExpressionToken(net *normalExpresionToken, positive bool) *lookBehindExpressionToken {
@@ -24,7 +24,6 @@ func (tk *lookBehindExpressionToken) match(m *matcher) bool {
 	m1 := m.copyMatcher()
 	m1.t = tk.t
 	m1.setDirection(-1)
-
 
 	ret := m1.matchFrom(m.getTextPos())
 

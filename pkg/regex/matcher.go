@@ -92,7 +92,7 @@ func (m *matcher) Match(text string) (ret bool, re *RegexException) {
 			m.groups[j] = &StringStack{}
 		}
 		m.t = m.getCaptureToken(0).copy()
- 		if m.matchFrom(i) {
+		if m.matchFrom(i) {
 			return true, nil
 		}
 
@@ -150,7 +150,7 @@ func (m *matcher) getGroup(pos int) []rune {
 }
 
 func (m *matcher) GetGroup(pos int) *string {
-	return  m.groups[pos].Peek()
+	return m.groups[pos].Peek()
 }
 
 func (m *matcher) pushGroup(pos int, t *string) {

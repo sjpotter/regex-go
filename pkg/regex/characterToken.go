@@ -33,11 +33,10 @@ func (tk *characterToken) match(m *matcher) bool {
 		textPos--
 	}
 
-
 	if textPos < len(text) && textPos >= 0 {
 		if tk.cc.match(text[textPos]) {
 			if dir == 1 {
-				m.setTextPos(textPos+1)
+				m.setTextPos(textPos + 1)
 			} else {
 				m.setTextPos(textPos)
 			}
@@ -80,4 +79,3 @@ func getCharacterClass(regex []rune, regexPos int) (*characterClass, int) {
 		return c, regexPos + 1
 	}
 }
-

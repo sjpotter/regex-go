@@ -10,6 +10,8 @@ func newNormalExpressionToken() *normalExpresionToken {
 	}
 }
 
+// Backtracking and Advancing are basially the same code path, try next iterator if it exists, so only difference
+// is how state is setup (maintained state, or new state)
 func (tk *normalExpresionToken) match(m *matcher) bool {
 	var state *expressionState
 

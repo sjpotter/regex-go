@@ -46,12 +46,13 @@ func (t *tokenizer) tokenizeRange(regexPos, end int) Token {
 		regexPos++
 	case '\\':
 		if regexPos+1 < len(t.regex) {
-			// word boundary anchor token
 			switch t.regex[regexPos+1] {
 			case 'b', 'B':
+				// word boundary anchor token
 				token = newAnchorToken(t.regex[regexPos+1])
 				regexPos += 2
 			case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
+				// back reference (match a previous group that the regex has stored)
 				regexPos++
 				val := int(t.regex[regexPos] - '0')
 				for unicode.IsDigit(t.regex[regexPos+1]) {
@@ -63,7 +64,7 @@ func (t *tokenizer) tokenizeRange(regexPos, end int) Token {
 				token = newBackReferenceToken(val)
 				regexPos++
 			default:
-				// other cases handled by characterToken below
+				// other cases handled by characterToken below (i.e. things like /d /w)
 			}
 		}
 	case '(': // There are many types of clauses that are within parens
@@ -101,7 +102,7 @@ func (t *tokenizer) tokenizeRange(regexPos, end int) Token {
 			token = t.createCapturedExpressionToken(capture, regexPos+1, endParen)
 			token = newStartCaptureToken(capture, token)
 		}
-		regexPos = endParen+1
+		regexPos = endParen + 1
 	}
 
 	if token == nil {
@@ -111,7 +112,7 @@ func (t *tokenizer) tokenizeRange(regexPos, end int) Token {
 	if token.quantifiable() {
 		var qt Token
 
-		qt, regexPos  = quantifierParse(token, t.regex, regexPos)
+		qt, regexPos = quantifierParse(token, t.regex, regexPos)
 		if qt != nil {
 			token = qt
 		}
@@ -153,7 +154,7 @@ func (t *tokenizer) createIfThenElseToken(regexPos, endParen int) Token {
 
 	if ifToken.normalExpression() {
 		t.captureCount-- // TODO: HACK as the tokenize on the () string above would have incremented
-		ifToken = newCaptureGroupTesterToken(t.regex[regexPos+1:ifEndParen])
+		ifToken = newCaptureGroupTesterToken(t.regex[regexPos+1 : ifEndParen])
 	}
 
 	if !ifToken.testable() {

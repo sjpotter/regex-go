@@ -11,6 +11,10 @@ func newAtomicExpressionToken() *atomicExpressionToken {
 	}
 }
 
+// As backtracking and advancing are very similar (if not matched, try next alternate), just that advancing has
+// by definition no atch already, don't distinguish their code, just how the state struct is setup.
+//
+// An AtomicExpressionToken sticks in an AtomicEndToken to mark an alternate matched if hit
 func (tk *atomicExpressionToken) match(m *matcher) bool {
 	var state *expressionState
 

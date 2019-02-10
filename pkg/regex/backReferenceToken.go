@@ -22,7 +22,7 @@ func (tk *backReferenceToken) match(m *matcher) bool {
 
 	if m.getDirection() != -1 {
 		ret = tk.forwardMatch(m)
-    } else {
+	} else {
 		return tk.reverseMatch(m)
 	}
 
@@ -42,14 +42,14 @@ func (tk *backReferenceToken) forwardMatch(m *matcher) bool {
 		return false
 	}
 
-	for i :=0; i < len(stored); i++ {
+	for i := 0; i < len(stored); i++ {
 		if textPos >= len(text) || stored[i] != text[textPos] {
 			return false
 		}
-        textPos++
+		textPos++
 	}
 
-    m.setTextPos(textPos)
+	m.setTextPos(textPos)
 
 	return true
 }
@@ -63,14 +63,14 @@ func (tk *backReferenceToken) reverseMatch(m *matcher) bool {
 		return false
 	}
 
-	for i := len(stored) -1; i >= 0; i-- {
+	for i := len(stored) - 1; i >= 0; i-- {
 		if textPos < 0 || stored[i] != text[textPos] {
 			return false
 		}
-        textPos--
+		textPos--
 	}
 
-    m.setTextPos(textPos)
+	m.setTextPos(textPos)
 
 	return true
 }

@@ -16,7 +16,7 @@ func newCaptureGroupTesterToken(capture []rune) *captureGroupTesterToken {
 		panic(newRegexException(fmt.Sprintf("CaptureGroupTesterToken: Unable to convert %v to an Integer", capture)))
 	}
 
-	return &captureGroupTesterToken{baseToken: newBaseToken(), 	group: int(group)}
+	return &captureGroupTesterToken{baseToken: newBaseToken(), group: int(group)}
 }
 
 func (tk *captureGroupTesterToken) testable() bool {

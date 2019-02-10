@@ -119,10 +119,7 @@ func copyList(n Token) (Token, Token) {
 
 func (tk *baseToken) deleteUntil(self Token, n Token, m *matcher) {
 	cur := tk.getNext()
-/* 	if cur == n {
-		return
-	}
-*/
+
 	if n != nil {
 		n.getPrev().setNext(nil)
 	}

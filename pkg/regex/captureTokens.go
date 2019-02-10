@@ -2,7 +2,7 @@ package regex
 
 type startCaptureToken struct {
 	*baseToken
-	t Token
+	t       Token
 	capture int
 }
 
@@ -22,11 +22,10 @@ func (tk *startCaptureToken) match(m *matcher) bool {
 			tk.deleteUntil(tk, state.myNext, m)
 			return false
 		}
-	} else {
-		state := &nextState{
-			myNext:   tk.getNext(),
-		}
-		m.tokenState[tk] = state
+	}
+
+	state := &nextState{
+		myNext: tk.getNext(),
 	}
 
 	startPos := m.getTextPos()
@@ -34,6 +33,7 @@ func (tk *startCaptureToken) match(m *matcher) bool {
 	tk.insertAfter(tk, end)
 	tk.insertAfter(tk, tk.t)
 
+	m.tokenState[tk] = state
 	return true
 }
 
@@ -45,10 +45,9 @@ func (tk *startCaptureToken) copy() Token {
 	return newStartCaptureToken(tk.capture, tk.t)
 }
 
-
 type endCaptureToken struct {
 	*baseToken
-	capture int
+	capture  int
 	startPos int
 }
 
@@ -78,5 +77,5 @@ func (tk *endCaptureToken) match(m *matcher) bool {
 }
 
 func (tk *endCaptureToken) copy() Token {
-	return &endCaptureToken{baseToken: newBaseToken(), capture: tk.capture,	startPos: tk.startPos}
+	return &endCaptureToken{baseToken: newBaseToken(), capture: tk.capture, startPos: tk.startPos}
 }

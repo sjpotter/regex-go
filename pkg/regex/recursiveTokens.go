@@ -10,8 +10,8 @@ type recursiveToken struct {
 
 func newRecursiveToken(capture int) *recursiveToken {
 	return &recursiveToken{
-		baseToken:    newBaseToken(),
-		group: capture,
+		baseToken: newBaseToken(),
+		group:     capture,
 	}
 }
 
@@ -23,17 +23,17 @@ func (tk *recursiveToken) match(m *matcher) bool {
 
 	t := m.getCaptureToken(tk.group).copy()
 
-    m1 := m.copyMatcher()
-    m1.t = t
+	m1 := m.copyMatcher()
+	m1.t = t
 
-    ret := m1.matchFrom(m.getTextPos())
-    if ret {
-    	m.copy(m1)
-    	m.tokenState[tk] = 1
-    	return true
+	ret := m1.matchFrom(m.getTextPos())
+	if ret {
+		m.copy(m1)
+		m.tokenState[tk] = 1
+		return true
 	}
 
-    return false
+	return false
 }
 
 func (tk *recursiveToken) copy() Token {
