@@ -55,3 +55,11 @@ func (tk *quantifierNonGreedyToken) cloneDecrement() *quantifierNonGreedyToken {
 
 	return newQt
 }
+
+func (tk *quantifierNonGreedyToken) copy() Token {
+	q := &quantifier{min: tk.min, max: tk.max}
+
+	qt := newQuantifierNonGreedyToken(q, tk.t)
+
+	return qt
+}

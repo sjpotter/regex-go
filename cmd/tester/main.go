@@ -25,18 +25,27 @@ func main() {
 
 		result, err := m.Match(text)
 		if err != nil {
-			fmt.Sprintf("regex library failed: %v", err)
+			fmt.Printf("regex library failed: %v", err)
+			continue
 		}
 		if result {
 			fmt.Println(text + " matched regex " + r)
 			fmt.Printf("Groups:")
 			for i, g := range m.GetGroups() {
-				fmt.Printf("%v: %v\n", i, *g)
+				fmt.Printf("%v: %v\n", i, toString(g))
 			}
 		} else {
 			fmt.Println(text + " didn't match regex " + r)
 
 		}
 
+	}
+}
+
+func toString(p *string) string {
+	if p != nil {
+		return fmt.Sprintf("\"%v\"", *p)
+	} else {
+		return fmt.Sprintf("nil")
 	}
 }

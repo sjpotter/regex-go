@@ -58,3 +58,11 @@ func (tk *quantifierPossessiveToken) cloneDecrement() *quantifierPossessiveToken
 
 	return newQt
 }
+
+func (tk *quantifierPossessiveToken) copy() Token {
+	q := &quantifier{min: tk.min, max: tk.max}
+
+	qt := newQuantifierPossessiveToken(q, tk.t)
+
+	return qt
+}

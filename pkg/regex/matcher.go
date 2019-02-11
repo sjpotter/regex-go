@@ -1,6 +1,7 @@
 package regex
 
 import (
+	"fmt"
 	"runtime/debug"
 )
 
@@ -22,10 +23,13 @@ func NewMatcher(t *tokenizer) (m *matcher, re *RegexException) {
 			return
 		}
 
-		m = nil
-		ok := false
-		if re, ok = e.(*RegexException); !ok {
-			re = newRegexException(string(debug.Stack()))
+		switch e.(type) {
+		case *RegexException:
+			m = nil
+			re = e.(*RegexException)
+		default:
+			m = nil
+			re = newRegexException(fmt.Sprintf("%v:\n%v", e, string(debug.Stack())))
 		}
 	}()
 
@@ -76,10 +80,13 @@ func (m *matcher) Match(text string) (ret bool, re *RegexException) {
 			return
 		}
 
-		ret = false
-		ok := false
-		if re, ok = e.(*RegexException); !ok {
-			re = newRegexException(string(debug.Stack()))
+		switch e.(type) {
+		case *RegexException:
+			ret = false
+			re = e.(*RegexException)
+		default:
+			ret = false
+			re = newRegexException(fmt.Sprintf("%v:\n%v", e, string(debug.Stack())))
 		}
 	}()
 
