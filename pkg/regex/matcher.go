@@ -46,7 +46,7 @@ func NewMatcher(t *tokenizer) (m *matcher, re *RegexException) {
 	}, nil
 }
 
-func (m *matcher) copyMatcher() *matcher {
+func (m *matcher) clone() *matcher {
 	m1 := &matcher{
 		text:       m.text,
 		textPos:    m.textPos,
@@ -65,7 +65,7 @@ func (m *matcher) copyMatcher() *matcher {
 	return m1
 }
 
-func (m *matcher) copy(m1 *matcher) {
+func (m *matcher) update(m1 *matcher) {
 	m.textPos = m1.textPos
 }
 
@@ -140,6 +140,7 @@ func (m *matcher) GetGroups() []*string {
 	return ret
 }
 
+// internal usage for rune slice behavior
 func (m *matcher) getGroup(pos int) []rune {
 	s := m.groups[pos].Peek()
 	if s != nil {

@@ -30,7 +30,7 @@ func newBaseToken() *baseToken {
 }
 
 func (tk *baseToken) match(m *matcher) bool {
-	panic(newRegexException("Unimplemented: always needs to be overriden"))
+	panic(newRegexException("match() unimplemented: always needs to be overriden"))
 }
 
 func (tk *baseToken) getNext() Token {
@@ -65,20 +65,6 @@ func (tk *baseToken) normalExpression() bool {
 	return false
 }
 
-func (tk *baseToken) insertAfter(self Token, n Token) {
-	if n == nil {
-		return
-	}
-
-	head, last := copyList(n)
-	if tk.getNext() != nil {
-		last.setNext(tk.getNext())
-		last.getNext().setPrev(last)
-	}
-	tk.setNext(head)
-	head.setPrev(self)
-}
-
 func copyList(n Token) (Token, Token) {
 	head := n.copy()
 	prev := head
@@ -93,6 +79,27 @@ func copyList(n Token) (Token, Token) {
 	}
 
 	return head, prev
+}
+
+/* 
+*  insertAfter() and deleteUntil() work together to enable compound tokens to maintain the linkedlist structure
+   A compound token is a token that is composed of other "subtokens" (ex: expressions with alternates, quantifiers...)
+   A compound token will insert its subtokens into the linked list when required but also remove them on failures.
+   To ensure pristine tokens, we always copy the token nodes that are part of the subtoken list before inserting them.
+   In many cases (notably quantifiers) the same token list can be inserted multiple times and hence needs to be copied
+*/
+func (tk *baseToken) insertAfter(self Token, n Token) {
+	if n == nil {
+		return
+	}
+
+	head, last := copyList(n)
+	if tk.getNext() != nil {
+		last.setNext(tk.getNext())
+		last.getNext().setPrev(last)
+	}
+	tk.setNext(head)
+	head.setPrev(self)
 }
 
 func (tk *baseToken) deleteUntil(self Token, n Token, m *matcher) {

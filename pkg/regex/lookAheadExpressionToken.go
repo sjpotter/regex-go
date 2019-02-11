@@ -21,7 +21,7 @@ func (tk *lookAheadExpressionToken) match(m *matcher) bool {
 		return false
 	}
 
-	m1 := m.copyMatcher()
+	m1 := m.clone()
 	m1.t = tk.t
 
 	ret := m1.matchFrom(m.getTextPos())

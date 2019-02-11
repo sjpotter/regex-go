@@ -29,7 +29,7 @@ func (tk *ifThenElseToken) match(m *matcher) bool {
 		}
 	}
 
-	m1 := m.copyMatcher()
+	m1 := m.clone()
 	m1.t = tk.ifToken
 
 	ret := m1.matchFrom(m.getTextPos())

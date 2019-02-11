@@ -41,7 +41,8 @@ func (t *tokenizer) tokenizeRange(regexPos, end int) Token {
 	}
 
 	switch t.regex[regexPos] {
-	case '^', '$': // start of line anchor token, end of line anchor token
+	case '^', '$':
+		// start of line anchor token, end of line anchor token
 		token = newAnchorToken(t.regex[regexPos])
 		regexPos++
 	case '\\':
@@ -64,39 +65,46 @@ func (t *tokenizer) tokenizeRange(regexPos, end int) Token {
 				token = newBackReferenceToken(val)
 				regexPos++
 			default:
-				// other cases handled by characterToken below (i.e. things like /d /w)
+				// other cases handled by characterToken below (i.e. things like \d \w)
 			}
 		}
 	case '(': // There are many types of clauses that are within parens
 		endParen := t.findMatchingParen(regexPos)
 
-		if t.regex[regexPos+1] == '?' { // There are also many types of clauses that are within (? )
+		if t.regex[regexPos+1] == '?' {
+			// There are also many types of clauses that are within (? )
 			switch t.regex[regexPos+2] {
 			case '>':
 				token = t.createAtomicExpressionToken(regexPos+3, endParen)
 
 			// Look Ahead does not make sense to be quantified, position resets after they are done
-			case '=': // Positive Look Ahead
+			case '=':
+				// Positive Look Ahead
 				token = t.createLookAheadExpressionToken(regexPos+3, endParen, true)
-			case '!': // Negative Look Ahead
+			case '!':
+				// Negative Look Ahead
 				token = t.createLookAheadExpressionToken(regexPos+3, endParen, false)
 			case '<':
 				switch t.regex[regexPos+3] {
-				case '=': // Positive Look Behind
+				case '=':
+					// Positive Look Behind
 					token = t.createLookBehindExpressionToken(regexPos+4, endParen, true)
-				case '!': // Negative Look Behind
+				case '!':
+					// Negative Look Behind
 					token = t.createLookBehindExpressionToken(regexPos+4, endParen, false)
 				default:
 					panic(newRegexException("Unknown lookbehind grouping"))
 				}
 			case '(':
 				token = t.createIfThenElseToken(regexPos+2, endParen)
-			case 'R', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9': //regex recursion
+			case 'R', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
+				//regex recursion
 				token = t.createRecursiveToken(regexPos+2, endParen)
 			default:
 				panic(newRegexException("Unknown grouping type"))
 			}
-		} else { //normal capture
+		} else {
+			//normal capture group
 			capture := t.captureCount
 			t.captureCount++
 
@@ -155,11 +163,11 @@ func (t *tokenizer) createIfThenElseToken(regexPos, endParen int) Token {
 
 	if ifToken.normalExpression() {
 		t.captureCount-- // TODO: HACK as the tokenize on the () string above would have incremented
-		ifToken = newCaptureGroupTesterToken(t.regex[regexPos+1 : ifEndParen])
+		ifToken = newCaptureGroupTesterToken(t.regex[regexPos+1:ifEndParen])
 	}
 
 	if !ifToken.testable() {
-		panic(newRegexException(fmt.Sprintf("Didn't parse a testable token from: %v", t.regex[regexPos:ifEndParen])))
+		panic(newRegexException(fmt.Sprintf("Didn't parse a testable token from: %v", string(t.regex[regexPos:ifEndParen]))))
 	}
 
 	pipes := t.findPipes(ifEndParen+1, endParen)

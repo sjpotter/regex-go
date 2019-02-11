@@ -23,12 +23,12 @@ func (tk *recursiveToken) match(m *matcher) bool {
 
 	t := m.getCaptureToken(tk.group).copy()
 
-	m1 := m.copyMatcher()
+	m1 := m.clone()
 	m1.t = t
 
 	ret := m1.matchFrom(m.getTextPos())
 	if ret {
-		m.copy(m1)
+		m.update(m1)
 		m.tokenState[tk] = 1
 		return true
 	}
@@ -66,6 +66,6 @@ func newRecursiveEndToken(m *matcher, next Token) *recursiveEndToken {
 }
 
 func (tk *recursiveEndToken) match(m *matcher) bool {
-	tk.mOld.copy(m)
+	tk.mOld.update(m)
 	return tk.getNext().match(tk.mOld)
 }

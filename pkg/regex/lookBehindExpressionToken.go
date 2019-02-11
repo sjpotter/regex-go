@@ -21,7 +21,7 @@ func (tk *lookBehindExpressionToken) match(m *matcher) bool {
 		return false
 	}
 
-	m1 := m.copyMatcher()
+	m1 := m.clone()
 	m1.t = tk.t
 	m1.setDirection(-1)
 
