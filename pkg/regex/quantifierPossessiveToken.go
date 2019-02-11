@@ -5,57 +5,48 @@ type quantifierPossessiveToken struct {
 	min     int
 	max     int
 	t       Token
-	paired  *quantifierPossessiveToken
-	matched bool
+	matched *bool
 }
 
 func newQuantifierPossessiveToken(q *quantifier, t Token) *quantifierPossessiveToken {
-	return &quantifierPossessiveToken{baseToken: newBaseToken(), min: q.min, max: q.max, t: t}
+	var sharedMatch bool
+	return &quantifierPossessiveToken{baseToken: newBaseToken(), min: q.min, max: q.max, t: t, matched: &sharedMatch}
 }
 
+// same exact logic as greedy, except we only backtrack to the furthest quantifier match, so all decremented
+// quantifiers have to share a matched state to reset once we try to continue the regex past the quantifier
 func (tk *quantifierPossessiveToken) match(m *matcher) bool {
-	if state, ok := m.tokenState[tk].(*nextState); ok {
-		tk.deleteUntil(tk, state.myNext, m)
+	if m.tokenState[tk] != nil {
+		if state, ok := m.tokenState[tk].(*nextState); ok {
+			firstTime := tk.getNext() != state.myNext
 
-		if tk.min != 0 {
-			delete(m.tokenState, tk)
-			return false
-		}
+			tk.deleteUntil(tk, state.myNext, m)
 
-		if tk.matched {
-			tmp := tk.paired
-			// if I matched, don't backtrack to previous matches
-			for tmp != nil {
-				tmp.matched = false
-				tmp = tmp.paired
+			if firstTime && tk.min == 0 && tk.max != 0 && *tk.matched {
+				*tk.matched = false
+				m.setTextPos(state.startPos)
+				return true
 			}
 
-			tk.matched = false
-			return true
+			*tk.matched = false
+			delete(m.tokenState, tk)
+			return false
+		} else {
+			panic(newRegexException("quantifierPossessiveToken state is not a *nextState"))
 		}
-
-		delete(m.tokenState, tk)
-		return false
 	}
 
-	tk.matched = false
+	*tk.matched = true
 
-	if tk.paired != nil {
-		tk.paired.matched = true
-	}
+	m.tokenState[tk] = &nextState{myNext: tk.getNext(), startPos: m.getTextPos()}
 
 	if tk.min != 0 || tk.max != 0 {
-		m.tokenState[tk] = &nextState{myNext: tk.getNext(), startPos: m.getTextPos()}
-
-		nextQt := tk.cloneDecrement()
-		nextQt.paired = tk
-
-		tk.insertAfter(tk, nextQt)
+		tk.insertAfter(tk, tk.cloneDecrement())
 		tk.insertAfter(tk, tk.t)
 		return true
 	}
 
-	return false
+	return true
 }
 
 func (tk *quantifierPossessiveToken) cloneDecrement() *quantifierPossessiveToken {
@@ -63,6 +54,7 @@ func (tk *quantifierPossessiveToken) cloneDecrement() *quantifierPossessiveToken
 
 	newQt := newQuantifierPossessiveToken(q, tk.t)
 	newQt.next = tk.next
+	newQt.matched = tk.matched
 
 	return newQt
 }

@@ -11,35 +11,34 @@ func newQuantifierNonGreedyToken(q *quantifier, t Token) *quantifierNonGreedyTok
 	return &quantifierNonGreedyToken{baseToken: newBaseToken(), min: q.min, max: q.max, t: t}
 }
 
+/* 4 cases
+ 1) advancing
+  a. if minimum is not zero, have to insert sub token and be like any other quantifier
+  b. if mimimum is zero, just return true
+ 2) backtracking
+  a. first time backtracking, if min == 0 (i.e. all minimum quantifiers matched) and max != 0 (i.e. can add), add
+  b. otherwise fail
+*/
 func (tk *quantifierNonGreedyToken) match(m *matcher) bool {
-	if state, ok := m.tokenState[tk].(*nextState); ok {
-		delete(m.tokenState, tk)
+	if m.tokenState[tk] != nil {
+		if state, ok := m.tokenState[tk].(*nextState); ok {
+			firstTime := tk.getNext() == state.myNext
 
-		// If we are backtracking before reaching the minimum amount of repititions, no match this path
-		if tk.min != 0 {
-			tk.deleteUntil(tk, state.myNext, m)
-			return false
-		}
-
-		// Non Greedy backtracking when reached the minimum amount of reptitions has 2 paths
-		// 1. have we tried adding one iterations of our quantification, if so add it
-		// 2. if already added it, that means no path this direction
-		if tk.max != 0 {
-			if tk.next == state.myNext { //i.e. we haven't inserted anything. backtracking as non greedy matching
-				m.tokenState[tk] = &nextState{myNext: state.myNext, startPos: m.getTextPos()}
+			if firstTime && tk.min == 0 && tk.max != 0 {
 				tk.insertAfter(tk, tk.cloneDecrement())
 				tk.insertAfter(tk, tk.t)
 				return true
-			} else { // after insert, we didn't match, so backtracking as no match
-				tk.deleteUntil(tk, state.myNext, m)
-				m.setTextPos(state.startPos)
-				return false
 			}
+
+			tk.deleteUntil(tk, state.myNext, m)
+			delete(m.tokenState, tk)
+			return false
+		} else {
+			panic(newRegexException("quantifierNonGreedyToken state is not a *nextState"))
 		}
 	}
-
+	// case 1a and 1b
 	m.tokenState[tk] = &nextState{myNext: tk.getNext(), startPos: m.getTextPos()}
-
 	if tk.min != 0 {
 		tk.insertAfter(tk, tk.cloneDecrement())
 		tk.insertAfter(tk, tk.t)
