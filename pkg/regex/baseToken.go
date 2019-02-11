@@ -1,5 +1,11 @@
 package regex
 
+/* A regexp is a doubly linked list of tokens (enabling advancing and backtracking without a stack) that can be edited
+   in place, so that compound tokens can insert their subtokens when advancing and remove them when backtracking.
+
+   If match returns true, we will advance to the next token in the list (possibly modified by the token itself) and when
+   it returns false, we will backtrack to the previous token.
+ */
 type Token interface {
 	match(m *matcher) bool
 	getNext() Token
@@ -19,16 +25,21 @@ type baseToken struct {
 	prev Token
 }
 
+/* nextState is the standard state strut used by multiple tokens that enables it to record the current text position
+   (for resetting if trying a different path available to the token) and myNext which is the token's current next token
+   so it can know what to remove up to if it has to delete the tokens it has inserted
+ */
 type nextState struct {
 	myNext   Token
 	startPos int
 }
 
-// super() like function
+// super() like function, doesn't do much now, but good to abstract it away to make it easy to modify
 func newBaseToken() *baseToken {
 	return &baseToken{}
 }
 
+// how we fake treat baseToken as an abstract class
 func (tk *baseToken) match(m *matcher) bool {
 	panic(newRegexException("match() unimplemented: always needs to be overriden"))
 }
@@ -49,6 +60,7 @@ func (tk *baseToken) setPrev(p Token) {
 	tk.prev = p
 }
 
+// more treating baseToken as an abstract class
 func (tk *baseToken) copy() Token {
 	panic(newRegexException("copy() unimplemented: always needs to be overriden"))
 }
@@ -65,6 +77,7 @@ func (tk *baseToken) normalExpression() bool {
 	return false
 }
 
+// clones a list of tokens by copying them
 func copyList(n Token) (Token, Token) {
 	head := n.copy()
 	prev := head
