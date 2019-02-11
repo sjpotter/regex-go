@@ -45,7 +45,7 @@ func quantifierParse(token Token, regex []rune, regexPos int) (Token, int) {
 		if regexPos < len(regex) {
 			switch regex[regexPos] {
 			case '?':
-				qt = newQuantifierNonGreedyToken(q, token)
+				qt = newQuantifierLazyToken(q, token)
 				regexPos++
 			case '+':
 				qt = newQuantifierPossessiveToken(q, token)
