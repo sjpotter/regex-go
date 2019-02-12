@@ -53,7 +53,6 @@ func (tk *quantifierPossessiveToken) cloneDecrement() *quantifierPossessiveToken
 	q := &quantifier{min: tk.min, max: tk.max}
 
 	newQt := newQuantifierPossessiveToken(q, tk.t)
-	newQt.next = tk.next
 	newQt.matched = tk.matched
 
 	return newQt
@@ -63,6 +62,7 @@ func (tk *quantifierPossessiveToken) copy() Token {
 	q := &quantifier{min: tk.min, max: tk.max}
 
 	qt := newQuantifierPossessiveToken(q, tk.t)
+	qt.matched = tk.matched
 
 	return qt
 }
